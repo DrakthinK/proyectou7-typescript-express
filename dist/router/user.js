@@ -14,22 +14,54 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const client_1 = require("@prisma/client");
+const User_1 = __importDefault(require("../models/User"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const usersr = express_1.default.Router();
 const prisma = new client_1.PrismaClient();
-usersr.get('/user', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+usersr.get('/api/v1/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const users = yield prisma.user.findMany();
     res.json(users);
 }));
-usersr.post('/user', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+usersr.post('/api/v1/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, email, password } = req.body;
+    let Usuario = new User_1.default(name, email, password);
     const users = yield prisma.user.create({
-        data: {
-            name: name,
-            email: email,
-            password: bcrypt_1.default.hashSync(password, bcrypt_1.default.genSaltSync(10)),
-        },
+        data: Usuario,
     });
     res.json(users);
+}));
+usersr.post('/api/v1/users/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, password } = req.body;
+    const usuario = yield prisma.user.findUnique({
+        where: {
+            email: email,
+        },
+        select: {
+            email: true,
+            password: true,
+        }
+    });
+    if (usuario == null) {
+        res.json({
+            "error": 401,
+            "msg": "credenciales incorectas"
+        });
+    }
+    else {
+        const ispassword = bcrypt_1.default.compareSync(password, usuario.password);
+        if (ispassword) {
+            const token = jsonwebtoken_1.default.sign({ id: usuario.email }, process.env.TOKEN_KEY || 'tkwqwer', {
+                expiresIn: 60 * 60 * 24
+            });
+            res.header('auth-token', token).json(usuario);
+        }
+        else {
+            res.json({
+                "error": 401,
+                "msg": "credenciales incorectas"
+            });
+        }
+    }
 }));
 exports.default = usersr;

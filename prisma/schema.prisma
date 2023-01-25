@@ -10,15 +10,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//{
-//  "id": 1,
-//"name": "Usuario 1",
-//  "email": "email@gmail.com",
-// "password": "123456"
-//"last_session": Date,
-//"update_at": Date,
-//  "date_born": Date
-//}
 model user {
   id           Int      @id @default(autoincrement())
   name         String
@@ -27,4 +18,34 @@ model user {
   last_session DateTime @default(now())
   update_at    DateTime @default(now())
   date_born    DateTime?
+  playlist        Playlist []
+}
+
+
+model song{
+  id           Int      @id @default(autoincrement())
+  name         String
+  artist       String
+  year         String
+  album        String
+  genre        String
+  duration     String
+  isprivate    String?
+  playlist        songs_playlist[]
+}
+
+model Playlist{
+  id           Int      @id @default(autoincrement())
+  name         String
+  user_id      Int
+  usuario      user    @relation(fields: [user_id], references: [id])
+  songs        songs_playlist[]
+}
+
+model songs_playlist{
+  id            Int @id @default(autoincrement())
+  songId        Int
+  songs         song  @relation(fields: [songId],references: [id])
+  playlistId    Int
+  playlist  Playlist    @relation(fields: [playlistId], references: [id])
 }
